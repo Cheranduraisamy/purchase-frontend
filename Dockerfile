@@ -15,7 +15,8 @@ FROM nginx:stable-alpine
 # Copy the custom Nginx configuration
 COPY nginx.conf /etc/nginx/nginx.conf
 # Copy the built Angular application from the build stage to the Nginx web root
-COPY --from=build /app/dist/purchase-frontend /usr/share/nginx/html
+# Angular 17+ with application builder outputs to dist/purchase-frontend/browser
+COPY --from=build /app/dist/purchase-frontend/browser /usr/share/nginx/html
 # Expose the port Nginx is listening on
 EXPOSE 8080
 # Command to start Nginx
