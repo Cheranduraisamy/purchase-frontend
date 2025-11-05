@@ -1,0 +1,405 @@
+<div class="dashboard-container">
+  <header class="dashboard-header">
+    <div class="logo">
+      <span class="logo-text">PO</span>
+      <span class="module-title">Purchase Order Module</span>
+    </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <div class="main-wrapper">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <nav>
+                <ul>
+                    <li (click)="navigateToDashboard()">
+                        <i class="fas fa-tachometer-alt"></i>
+                        <span>Dashboard</span>
+                    </li>
+                    <li (click)="navigateToNegotiation()">
+                        <i class="fas fa-comments"></i>
+                        <span>Review & Negotiate</span>
+                    </li>
+                    <li class="active">
+                        <i class="fas fa-check-circle"></i>
+                        <span>Finalize PO</span>
+                    </li>
+                </ul>
+            </nav>
+        </aside>
+
+        <!-- Content Area -->
+        <main class="content-area">
+            <div class="content-header">
+                <h1>Purchase Order Management</h1>
+                <p>View, filter, and manage purchase orders.</p>
+            </div>
+            
+            <!-- Action Buttons -->
+            <div class="action-buttons">
+                <button class="btn btn-info" (click)="refresh()">
+                    <i class="fas fa-sync-alt"></i> Refresh Data
+                </button>
+            </div>
+
+            <!-- Metric Cards -->
+            <div class="metric-cards">
+                <div class="card">
+                    <div class="icon-wrapper primary"><i class="fas fa-file-invoice"></i></div>
+                    <div class="card-content">
+                        <span>Total POs</span>
+                        <span class="value">{{ totalPoCount }}</span>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="icon-wrapper approved"><i class="fas fa-check-circle"></i></div>
+                    <div class="card-content">
+                        <span>POs Approved</span>
+                        <span class="value">{{ approvedPoCount }}</span>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="icon-wrapper failed"><i class="fas fa-times-circle"></i></div>
+                    <div class="card-content">
+                        <span>POs Rejected</span>
+                        <span class="value">{{ rejectedPoCount }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Table Container -->
+            <div class="table-container">
+                <h3>Purchase Orders</h3>
+                <div class="filter-container">
+                    <div class="filter-row">
+                        <div class="filter-group">
+                            <label for="statusFilter">Status:</label>
+                            <select id="statusFilter" class="filter-select" [(ngModel)]="selectedFilterStatus" (change)="applyFilters()">
+                                <option value="All">All Status</option>
+                                <option *ngFor="let status of filterStatusOptions.slice(1)" [value]="status">{{ status }}</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <label for="vendorSearch">Vendor:</label>
+                            <input
+                                id="vendorSearch"
+                                type="text"
+                                class="filter-input"
+                                placeholder="Search Vendor (ID or Name)"
+                                [(ngModel)]="vendorSearchTerm"
+                                (input)="onVendorSearchChange()"
+                            />
+                        </div>
+                        <div class="filter-group">
+                            <label for="yearFilter">Year:</label>
+                            <input
+                                type="number"
+                                id="yearFilter"
+                                class="filter-input"
+                                [(ngModel)]="selectedFilterYear"
+                                placeholder="Enter year"
+                                (input)="applyFilters()">
+                        </div>
+
+                        <div class="filter-group">
+                            <button class="btn btn-secondary" (click)="clearFilters()">
+                                <i class="fas fa-times"></i> Clear Filters
+                            </button>
+                        </div>
+
+                        <div class="filter-group">
+                            <span class="filter-results">
+                                Found {{ filteredPurchaseOrders.length }} result(s)
+                            </span>
+                        </div>
+                    </div>
+                </div>
+        
+        <div class="text-center" *ngIf="loading">
+          <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+          </div>
+        </div>
+        
+        <table *ngIf="!loading && filteredPurchaseOrders.length > 0">
+          <thead>
+            <tr>
+              <th class="sortable">PO ID <i class="fas fa-sort"></i></th>
+              <th class="sortable">Event ID <i class="fas fa-sort"></i></th>
+              <th class="sortable">Vendor ID <i class="fas fa-sort"></i></th>
+              <th class="sortable">Negotiation ID <i class="fas fa-sort"></i></th>
+              <th class="sortable">PR ID <i class="fas fa-sort"></i></th>
+              <th class="sortable">Order Date <i class="fas fa-sort"></i></th>
+              <th class="sortable multi-line-header">
+                <span class="header-text">Amount<br>(INR)</span>
+                <i class="fas fa-sort"></i>
+              </th>
+              <th class="sortable multi-line-header">
+                <span class="header-text">Amount<br>(USD)</span>
+                <i class="fas fa-sort"></i>
+              </th>
+              <th class="sortable">Status <i class="fas fa-sort"></i></th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+                     <tr *ngFor="let po of paginatedPurchaseOrders" (click)="onRowClick(po)" class="clickable-row">
+                         <td><strong>#{{ po.po_id }}</strong></td>
+                         <td>{{ getEventName(po.eventid) }}</td>
+                         <td>{{ getVendorName(po.vendorid) }}</td>
+                         <td>{{ po.negotiationid }}</td>
+                         <td>{{ po.prid }}</td>
+                         <td>{{ formatDate(po.orderdate) }}</td>
+                         <td>{{ formatCurrencyValue(po.orderamountINR, 'en-IN', '₹') }}</td>
+                         <td>{{ formatCurrencyValue(po.orderamountdollar, 'en-US', '$') }}</td>
+                         <td>
+                             <span class="status-badge" [ngClass]="{
+                                 'status-successful': po.po_status === Status1.APPROVED,
+                                 'status-canceled': po.po_status === Status1.REJECTED,
+                                 'status-default': po.po_status !== Status1.APPROVED && po.po_status !== Status1.REJECTED
+                             }">
+                               {{ po.po_status }}
+                             </span>
+                         </td>
+                         <td class="action-column">
+                             <div class="btn-group" role="group">
+                                 <button
+                                     class="btn btn-sm btn-info"
+                                     (click)="$event.stopPropagation(); downloadReport(po)"
+                                     title="Download PDF Report">
+                                     <i class="fas fa-file-pdf"></i> PDF
+                                 </button>
+                                 <button
+                                     class="btn btn-sm btn-primary"
+                                     (click)="$event.stopPropagation(); sendEmailToOwner(po)"
+                                     title="Send Email">
+                                     <i class="fas fa-envelope"></i> Email
+                                 </button>
+                                 <button
+                                     *ngIf="po.po_status !== Status1.REJECTED"
+                                     class="btn btn-sm btn-danger"
+                                     (click)="$event.stopPropagation(); updateStatus(po.po_id, Status1.REJECTED)"
+                                     title="Mark as Rejected">
+                                     <i class="fas fa-times-circle"></i> Reject
+                                 </button>
+                             </div>
+                         </td>
+                     </tr>
+                 </tbody>
+             </table>
+ 
+             <div *ngIf="!loading && filteredPurchaseOrders.length === 0" class="no-data">
+                 No purchase orders found matching your criteria.
+             </div>
+ 
+             
+             <div class="pagination-container" *ngIf="totalPages > 0">
+                 <div class="pagination-info">
+                     <span>Showing {{ (currentPage - 1) * itemsPerPage + 1 }} to {{ Math.min(currentPage * itemsPerPage, filteredPurchaseOrders.length) }} of {{ filteredPurchaseOrders.length }} results</span>
+                 </div>
+                 <div class="pagination-controls">
+                     <button class="pagination-btn" [disabled]="currentPage === 1" (click)="prevPage()">
+                         <i class="fas fa-chevron-left"></i> Previous
+                     </button>
+ 
+                     <div class="page-numbers">
+                         <button
+                             *ngFor="let pageNum of pages"
+                             class="page-btn"
+                             [class.active]="pageNum === currentPage"
+                             (click)="goToPage(pageNum)">
+                             {{ pageNum }}
+                         </button>
+                     </div>
+ 
+                     <button class="pagination-btn" [disabled]="currentPage === totalPages" (click)="nextPage()">
+                         Next <i class="fas fa-chevron-right"></i>
+                     </button>
+                 </div>
+             </div>
+         </div>
+
+<div class="modal-overlay" *ngIf="showDetailsPanel && selectedPOForDetails" (click)="closeDetailsPanel()">
+    <div class="view-container" (click)="$event.stopPropagation()">
+        <div class="view-header">
+            <h2>Purchase Order Details: #{{ selectedPOForDetails.po_id }}</h2>
+            <div class="view-header-buttons">
+                <button class="btn-back-view" (click)="closeDetailsPanel()">
+                    <i class="fas fa-arrow-left"></i> Back
+                </button>
+            </div>
+        </div>
+        
+        <div class="details-grid-view">
+            <div class="card-view highlight-card-view">
+                <h3><i class="fas fa-file-alt"></i> Purchase Order Details</h3>
+                <div class="card-content-view">
+                    <!-- Basic Information Section -->
+                    <div class="section-divider">
+                        <h4><i class="fas fa-info-circle"></i> Basic Information</h4>
+                    </div>
+                    <div class="detail-row-view">
+                        <span class="label-view">PO ID:</span>
+                        <span class="value-view">#{{ selectedPOForDetails.po_id }}</span>
+                    </div>
+                    <div class="detail-row-view">
+                        <span class="label-view">Order Date:</span>
+                        <span class="value-view pr-date-view">
+                            <i class="fas fa-calendar"></i>
+                            {{ formatDate(selectedPOForDetails.orderdate) }}
+                        </span>
+                    </div>
+                    <div class="detail-row-view">
+                        <span class="label-view">Event:</span>
+                        <span class="value-view">{{ getEventName(selectedPOForDetails.eventid) }}</span>
+                    </div>
+                    <div class="detail-row-view">
+                        <span class="label-view">Vendor:</span>
+                        <span class="value-view">{{ getVendorName(selectedPOForDetails.vendorid) }}</span>
+                    </div>
+                    <div class="detail-row-view">
+                        <span class="label-view">Negotiation ID:</span>
+                        <span class="value-view">{{ selectedPOForDetails.negotiationid }}</span>
+                    </div>
+                    <div class="detail-row-view">
+                        <span class="label-view">PR ID:</span>
+                        <span class="value-view">{{ selectedPOForDetails.prid }}</span>
+                    </div>
+
+                    <!-- Financial Information Section -->
+                    <div class="section-divider">
+                        <h4><i class="fas fa-dollar-sign"></i> Financial Information</h4>
+                    </div>
+                    <div class="detail-row-view">
+                        <span class="label-view">Amount (INR):</span>
+                        <span class="value-view amount-view">{{ formatCurrencyValue(selectedPOForDetails.orderamountINR, 'en-IN', '₹') }}</span>
+                    </div>
+                    <div class="detail-row-view">
+                        <span class="label-view">Amount (USD):</span>
+                        <span class="value-view amount-view">{{ formatCurrencyValue(selectedPOForDetails.orderamountdollar, 'en-US', '$') }}</span>
+                    </div>
+
+                    <!-- Status Information Section -->
+                    <div class="section-divider">
+                        <h4><i class="fas fa-history"></i> Status Information</h4>
+                    </div>
+                    <div class="detail-row-view">
+                        <span class="label-view">Current Status:</span>
+                        <span class="value-view">
+                            <span class="status-badge-view" [ngClass]="{
+                                'status-approved-view': selectedPOForDetails.po_status === Status1.APPROVED,
+                                'status-rejected-view': selectedPOForDetails.po_status === Status1.REJECTED,
+                                'status-default-view': selectedPOForDetails.po_status !== Status1.APPROVED && selectedPOForDetails.po_status !== Status1.REJECTED
+                            }">
+                                {{ selectedPOForDetails.po_status }}
+                            </span>
+                        </span>
+                    </div>
+                    <div class="detail-row-view" *ngIf="selectedPOForDetails.statusChangeReason">
+                        <span class="label-view">Reason for Change:</span>
+                        <span class="value-view">{{ selectedPOForDetails.statusChangeReason }}</span>
+                    </div>
+                    <div class="detail-row-view" *ngIf="selectedPOForDetails.po_status === Status1.REJECTED && selectedPOForDetails.rejectedDateTime">
+                        <span class="label-view">Rejected On:</span>
+                        <span class="value-view pr-date-view">
+                            <i class="fas fa-calendar"></i>
+                            {{ formatDateTime(selectedPOForDetails.rejectedDateTime) }}
+                        </span>
+                    </div>
+
+                    <!-- Actions Section -->
+                    <div class="section-divider">
+                        <h4><i class="fas fa-cogs"></i> Actions</h4>
+                    </div>
+                    <div class="actions-row-view">
+                        <button class="btn-edit-view" (click)="downloadReport(selectedPOForDetails); $event.stopPropagation()">
+                            <i class="fas fa-file-pdf"></i> Download Report
+                        </button>
+                        <button class="btn-edit-view" (click)="sendEmailToOwner(selectedPOForDetails); $event.stopPropagation()">
+                            <i class="fas fa-envelope"></i> Email Owner
+                        </button>
+                        <button *ngIf="selectedPOForDetails.po_status !== Status1.REJECTED" 
+                                class="btn-edit-view" 
+                                style="background: #f44336 !important;"
+                                (click)="updateStatus(selectedPOForDetails.po_id, Status1.REJECTED); $event.stopPropagation()">
+                            <i class="fas fa-times-circle"></i> Reject PO
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+ 
+ <div class="modal-overlay" *ngIf="modal.show" (click)="closeModal()">
+   <div class="modal-content" (click)="$event.stopPropagation()">
+     <div class="modal-header">
+       <h2>{{ modal.title }}</h2>
+       <button class="close-btn" (click)="closeModal()" title="Close">
+         <i class="fas fa-times"></i>
+       </button>
+     </div>
+ 
+     <div class="modal-body">
+       <div class="text-center mb-3">
+         <span class="modal-icon-large" [ngClass]="{
+             'text-success': modal.type === 'success',
+             'text-danger': modal.type === 'error',
+             'text-warning': modal.type === 'warning',
+             'text-info': modal.type === 'info'
+         }">
+           <i class="fas" [ngClass]="{
+               'fa-check-circle': modal.type === 'success',
+               'fa-exclamation-circle': modal.type === 'error' || modal.type === 'warning',
+               'fa-info-circle': modal.type === 'info'
+           }"></i>
+         </span>
+       </div>
+ 
+       <p class="text-center">{{ modal.message }}</p>
+ 
+       <div *ngIf="modal.showReasonInput" class="form-group mt-3">
+         <label for="reasonForChange">Reason <span class="text-danger">*</span></label>
+         <textarea
+           id="reasonForChange"
+           class="form-control"
+           [class.is-invalid]="modal.isReasonInvalid"
+           rows="3"
+           [(ngModel)]="modal.reasonInput"
+           placeholder="Reason for Rejection..."
+           required
+         ></textarea>
+         <div *ngIf="modal.isReasonInvalid" class="invalid-feedback d-block">
+            Please provide a reason.
+         </div>
+       </div>
+     </div>
+ 
+     <div class="modal-footer">
+       <button
+         *ngIf="modal.showActions"
+         type="button"
+         class="btn btn-secondary"
+         (click)="closeModal()">
+         <i class="fas fa-times"></i> No, Cancel
+       </button>
+       <button
+         *ngIf="modal.showActions"
+         type="button"
+         class="btn btn-primary"
+         (click)="confirmAction()">
+         <i class="fas fa-check"></i> Yes, Proceed
+       </button>
+       <button
+         *ngIf="!modal.showActions"
+         type="button"
+         class="btn btn-primary"
+         (click)="closeModal()">
+         <i class="fas fa-check"></i> OK
+       </button>
+     </div>
+   </div>
+ </div>
+        </main>
+    </div>
+</div>

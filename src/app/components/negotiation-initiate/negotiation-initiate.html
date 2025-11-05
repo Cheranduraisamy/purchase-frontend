@@ -1,0 +1,123 @@
+<!-- src/app/components/negotiation-initiate/negotiation-initiate.html -->
+<div class="initiate-container">
+  <div class="header">
+    <h2>Initiate Negotiation for PR #{{ prId }}</h2>
+    <button class="btn-back" (click)="cancel()">Cancel</button>
+  </div>
+
+  <div *ngIf="isLoading" class="loading">Loading PR details...</div>
+
+  <div *ngIf="errorMessage" class="alert alert-error">
+    <i class="fas fa-exclamation-circle"></i> {{ errorMessage }}
+  </div>
+
+  <div *ngIf="successMessage" class="alert alert-success">
+    <i class="fas fa-check-circle"></i> {{ successMessage }}
+  </div>
+
+  <div *ngIf="!isLoading && purchaseRequest" class="form-container">
+    <!-- PR Information (Read-only) -->
+    <div class="info-section">
+      <h3>Purchase Request Information</h3>
+      <div class="info-grid">
+        <div class="info-item">
+          <label>PR Number:</label>
+          <span>PR-{{ purchaseRequest.prId }}</span>
+        </div>
+        <div class="info-item">
+          <label>Vendor:</label>
+          <span>{{ purchaseRequest.vendorId }} - {{ vendorName }}</span>
+        </div>
+        <div class="info-item">
+          <label>Event:</label>
+          <span>{{ purchaseRequest.eventId }} - {{ eventName }}</span>
+        </div>
+        <div class="info-item">
+          <label>Estimated Amount:</label>
+          <span>{{ purchaseRequest.allocatedamount | currency:'INR':'symbol':'1.2-2' }}</span>
+        </div>
+        <div class="info-item">
+          <label>Status:</label>
+          <span class="status-badge">{{ purchaseRequest.prstatus }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Negotiation Form -->
+    <div class="form-section">
+      <h3>Negotiation Details</h3>
+
+      <div class="form-group">
+        <label for="eventId">Event <span class="required">*</span></label>
+        <select 
+          id="eventId"
+          [(ngModel)]="negotiationData.eventId"
+          class="form-control"
+          required
+          [disabled]="isSaving">
+          <option value="" disabled>Select Event</option>
+          <option *ngFor="let event of allEvents" [value]="event.eventId">
+            {{ event.eventId }} - {{ event.eventname }}
+          </option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="vendorId">Vendor <span class="required">*</span></label>
+        <select 
+          id="vendorId"
+          [(ngModel)]="negotiationData.vendorId"
+          class="form-control"
+          required
+          [disabled]="isSaving">
+          <option value="" disabled>Select Vendor</option>
+          <option *ngFor="let vendor of allVendors" [value]="vendor.vendorId">
+            {{ vendor.vendorId }} - {{ vendor.vendorname }}
+          </option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="initialQuote">Initial Quote Amount (₹) <span class="required">*</span></label>
+        <input 
+          type="number" 
+          id="initialQuote"
+          [(ngModel)]="negotiationData.initialQuoteAmount"
+          class="form-control"
+          step="0.01"
+          min="0"
+          placeholder="Enter amount in rupees"
+          required
+          [disabled]="isSaving">
+      </div>
+
+      <div class="form-group">
+        <label for="negotiationDate">Negotiation Date</label>
+        <input 
+          type="date" 
+          id="negotiationDate"
+          [(ngModel)]="negotiationData.negotiationDate"
+          class="form-control"
+          [disabled]="isSaving">
+      </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="button-group">
+      <button 
+        class="btn btn-primary" 
+        (click)="initiateNegotiation()"
+        [disabled]="isSaving">
+        <i class="fas fa-handshake"></i>
+        <span *ngIf="!isSaving">Initiate Negotiation</span>
+        <span *ngIf="isSaving">Initiating...</span>
+      </button>
+      <button 
+        class="btn btn-cancel" 
+        (click)="cancel()"
+        [disabled]="isSaving">
+        <i class="fas fa-times"></i> Cancel
+      </button>
+    </div>
+  </div>
+</div>

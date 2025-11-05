@@ -1,0 +1,201 @@
+/* src/app/components/negotiation-initiate/negotiation-initiate.css */
+.initiate-container { 
+  max-width: 800px; 
+  margin: 20px auto; 
+  padding: 20px; 
+  background: white; 
+  border-radius: 8px; 
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1); 
+}
+
+.header { 
+  display: flex; 
+  justify-content: space-between; 
+  align-items: center; 
+  margin-bottom: 30px; 
+  padding-bottom: 15px; 
+  border-bottom: 2px solid #e0e0e0; 
+}
+
+.header h2 { 
+  margin: 0; 
+  color: #333; 
+}
+
+.btn-back { 
+  padding: 8px 16px; 
+  background: #6c757d; 
+  color: white; 
+  border: none; 
+  border-radius: 4px; 
+  cursor: pointer; 
+}
+
+.btn-back:hover { 
+  background: #5a6268; 
+}
+
+.loading { 
+  text-align: center; 
+  padding: 40px; 
+  color: #666; 
+}
+
+.alert { 
+  padding: 12px 16px; 
+  margin-bottom: 20px; 
+  border-radius: 4px; 
+  display: flex; 
+  align-items: center; 
+  gap: 10px; 
+}
+
+.alert-error { 
+  background: #ffebee; 
+  color: #c62828; 
+  border-left: 4px solid #c62828; 
+}
+
+.alert-success { 
+  background: #e8f5e9; 
+  color: #2e7d32; 
+  border-left: 4px solid #2e7d32; 
+}
+
+.info-section, .form-section { 
+  margin-bottom: 30px; 
+  padding: 20px; 
+  background: #f9f9f9; 
+  border-radius: 6px; 
+}
+
+.info-section h3, .form-section h3 { 
+  margin-top: 0; 
+  margin-bottom: 20px; 
+  color: #444; 
+}
+
+.info-grid { 
+  display: grid; 
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); 
+  gap: 15px; 
+}
+
+.info-item { 
+  display: flex; 
+  flex-direction: column; 
+  gap: 5px; 
+}
+
+.info-item label { 
+  font-weight: 600; 
+  color: #666; 
+  font-size: 14px; 
+}
+
+.info-item span { 
+  font-size: 16px; 
+  color: #333; 
+}
+
+.status-badge { 
+  display: inline-block; 
+  padding: 4px 12px; 
+  background: #2196f3; 
+  color: white; 
+  border-radius: 12px; 
+  font-size: 14px; 
+}
+
+.form-group { 
+  margin-bottom: 20px; 
+}
+
+.form-group label { 
+  display: block; 
+  margin-bottom: 8px; 
+  font-weight: 600; 
+  color: #555; 
+}
+
+.required { 
+  color: #d32f2f; 
+}
+
+.form-control { 
+  width: 100%; 
+  padding: 10px; 
+  border: 1px solid #ddd; 
+  border-radius: 4px; 
+  font-size: 16px; 
+  box-sizing: border-box; 
+}
+
+.form-control:focus { 
+  outline: none; 
+  border-color: #1976d2; 
+  box-shadow: 0 0 0 3px rgba(25, 118, 210, 0.1); 
+}
+
+.form-control:disabled { 
+  background: #f5f5f5; 
+  cursor: not-allowed; 
+}
+
+/* Select dropdown specific styling */
+select.form-control {
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+  background-position: right 8px center;
+  background-repeat: no-repeat;
+  background-size: 16px;
+  appearance: none;
+  padding-right: 40px;
+}
+
+select.form-control option {
+  padding: 8px;
+  background: white;
+  color: #333;
+}
+
+.button-group { 
+  display: flex; 
+  gap: 15px; 
+  margin-top: 30px; 
+  padding-top: 20px; 
+  border-top: 1px solid #e0e0e0; 
+}
+
+.btn { 
+  padding: 12px 24px; 
+  border: none; 
+  border-radius: 4px; 
+  font-size: 16px; 
+  cursor: pointer; 
+  display: flex; 
+  align-items: center; 
+  gap: 8px; 
+}
+
+.btn:disabled { 
+  opacity: 0.6; 
+  cursor: not-allowed; 
+}
+
+.btn-primary { 
+  background: #1976d2; 
+  color: white; 
+}
+
+.btn-primary:hover:not(:disabled) { 
+  background: #1565c0; 
+}
+
+.btn-cancel { 
+  background: #f44336; 
+  color: white; 
+}
+
+.btn-cancel:hover:not(:disabled) { 
+  background: #d32f2f; 
+}

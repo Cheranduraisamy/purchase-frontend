@@ -1,0 +1,517 @@
+<!-- Combined Negotiation Component Template -->
+<div class="negotiation-container">
+
+  <!-- LIST VIEW - DASHBOARD STYLE -->
+  <div *ngIf="currentView === 'list'" class="dashboard-container">
+    <!-- Dashboard Header -->
+    <header class="dashboard-header">
+      <div class="logo">
+        <span class="logo-text">NEG</span>
+        <span class="module-title">Negotiation Management</span>
+      </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <div class="main-wrapper">
+      <!-- Sidebar Navigation -->
+      <aside class="sidebar">
+        <nav>
+          <ul>
+            <li (click)="navigateToPurchaseRequests()">
+              <i class="fas fa-tachometer-alt"></i>
+              <span>Dashboard</span>
+            </li>
+            <li class="active">
+              <i class="fas fa-comments"></i>
+              <span>Review & Negotiate</span>
+            </li>
+            <li (click)="navigateToPurchaseOrders()">
+              <i class="fas fa-check-circle"></i>
+              <span>Finalize PO</span>
+            </li>
+          </ul>
+        </nav>
+      </aside>
+
+      <!-- Content Area -->
+      <main class="content-area">
+        <div class="content-header">
+          <h1>Review & Negotiate</h1>
+          <p>Manage and track all negotiation processes</p>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="action-buttons">
+          <button class="btn btn-primary btn-md" (click)="refreshNegotiations()">
+            <i class="fas fa-refresh"></i> Refresh Data
+          </button>
+        </div>
+
+        <!-- Metric Cards -->
+        <div class="metric-cards">
+          <div class="card">
+            <div class="icon-wrapper pending"><i class="fas fa-clock"></i></div>
+            <div class="card-content">
+              <span>Negotiation Pending</span>
+              <span class="value">{{ getPendingCount() }}</span>
+            </div>
+          </div>
+          <div class="card">
+            <div class="icon-wrapper approved"><i class="fas fa-check-circle"></i></div>
+            <div class="card-content">
+              <span>Negotiation Approved</span>
+              <span class="value">{{ getCompletedCount() }}</span>
+            </div>
+          </div>
+          <div class="card">
+            <div class="icon-wrapper failed"><i class="fas fa-times-circle"></i></div>
+            <div class="card-content">
+              <span>Negotiation Rejected</span>
+              <span class="value">{{ getFailedCount() }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Table Container -->
+        <div class="table-container">
+          <h3>Negotiations</h3>
+          
+          <!-- Filter Section -->
+          <div class="filter-container">
+            <div class="search-group">
+              <i class="fas fa-search"></i>
+              <input type="text" 
+                     placeholder="Search by Negotiation ID..." 
+                     [(ngModel)]="searchTerm"
+                     (ngModelChange)="onSearchTermChange($event)"
+                     class="search-input">
+            </div>
+            <div class="filter-group">
+              <select [(ngModel)]="selectedYear" (change)="onYearFilterChange()" class="filter-dropdown">
+                <option [ngValue]="null">All Years</option>
+                <option *ngFor="let year of availableYears" [ngValue]="year">{{ year }}</option>
+              </select>
+
+               <select [(ngModel)]="selectedStatus" (change)="onStatusFilterChange()" class="status-dropdown">
+               <option [ngValue]="null">All Statuses</option>
+              <option *ngFor="let status of allAvailableStatuses" [ngValue]="status">{{ status }}</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Loading/Error States -->
+          <div *ngIf="isLoading" class="loading-spinner">
+            <i class="fas fa-spinner fa-spin"></i> Loading negotiations...
+          </div>
+
+          <div *ngIf="errorMessage" class="error-message">
+            <i class="fas fa-exclamation-triangle"></i> {{ errorMessage }}
+          </div>
+
+          <!-- Negotiations Table -->
+          <table *ngIf="!isLoading && !errorMessage">
+            <thead>
+              <tr>
+                <th class="sortable multi-line-header" (click)="sortBy('negotiationId')">
+                  <span class="header-text">Negotiation<br>ID</span> <i [class]="getSortIcon('negotiationId')"></i>
+                </th>
+                <th class="sortable" (click)="sortBy('prId')">
+                  PR ID <i [class]="getSortIcon('prId')"></i>
+                </th>
+                <th class="sortable multi-line-header" (click)="sortBy('eventId')">
+                  <span class="header-text">Event<br>ID</span> <i [class]="getSortIcon('eventId')"></i>
+                </th>
+                <th class="sortable multi-line-header" (click)="sortBy('vendorId')">
+                  <span class="header-text">Vendor<br>ID</span> <i [class]="getSortIcon('vendorId')"></i>
+                </th>
+                <th class="sortable multi-line-header" (click)="sortBy('initialquoteamount')">
+                  <span class="header-text">Initial<br>Quote (₹)</span> <i [class]="getSortIcon('initialquoteamount')"></i>
+                </th>
+                <th class="sortable multi-line-header" (click)="sortBy('finalquoteamount')">
+                  <span class="header-text">Final<br>Quote (₹)</span> <i [class]="getSortIcon('finalquoteamount')"></i>
+                </th>
+                <th class="sortable" (click)="sortBy('status')">
+                  Status <i [class]="getSortIcon('status')"></i>
+                </th>
+                <th class="sortable" (click)="sortBy('date')">
+                  Date <i [class]="getSortIcon('date')"></i>
+                </th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let nego of displayedNegotiations; let i = index">
+                <td>NEG-{{ nego.negotiationid }}</td>
+                <td>{{ nego.purchaseRequest?.prId || 'N/A' }}</td>
+                <td>{{ nego.eventid }} - {{ getEventName(nego.eventid) }}</td>
+                <td>{{ nego.vendorid }} - {{ getVendorName(nego.vendorid) }}</td>
+                <td>{{ nego.initialquoteamount | currency:'INR':'':'1.2-2' }}</td>
+                <td>
+                  <span *ngIf="nego.finalquoteamount !== undefined && nego.finalquoteamount !== null">
+                    {{ nego.finalquoteamount | currency:'INR':'':'1.2-2' }}
+                  </span>
+                  <span *ngIf="nego.finalquoteamount === undefined || nego.finalquoteamount === null" class="pending-text">Pending</span>
+                </td>
+                <td>
+                  <span class="status-badge" [ngClass]="getNegotiationStatusClass(nego.negotiationstatus)">
+                    {{ nego.negotiationstatus }}
+                  </span>
+                </td>
+                <td>{{ nego.negotiationDate | date:'dd/MM/yyyy' }}</td>
+                <td class="action-column">
+                  <div class="action-buttons-container">
+                    <button class="btn btn-info btn-sm view-btn" (click)="viewNegotiationDetails(nego.negotiationid)" title="View Details">
+                      <i class="fas fa-eye" aria-hidden="true"></i>
+                    </button>
+                    <button class="btn btn-primary btn-sm edit-btn" (click)="editNegotiation(nego.negotiationid)" title="Edit Negotiation">
+                      <i class="fas fa-edit" aria-hidden="true"></i>
+                    </button>
+                    <button class="btn btn-success btn-sm mail-btn" (click)="sendMail(nego)" title="Send Email">
+                      <i class="fas fa-envelope" aria-hidden="true"></i>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+              <tr *ngIf="displayedNegotiations.length === 0">
+                <td colspan="9" class="no-data">No negotiations found. Start by creating a Purchase Request.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Pagination Controls -->
+        <div class="pagination-container" *ngIf="totalItems > 0">
+          <div class="pagination-info">
+            <span>Showing {{ (currentPage - 1) * itemsPerPage + 1 }} to {{ Math.min(currentPage * itemsPerPage, totalItems) }} of {{ totalItems }} entries</span>
+          </div>
+          <div class="pagination" *ngIf="totalPages > 1">
+            <button class="page-btn" (click)="previousPage()" [disabled]="currentPage === 1">
+              <i class="fas fa-chevron-left"></i> Previous
+            </button>
+            
+            <button 
+              *ngFor="let page of getPageNumbers()" 
+              class="page-btn" 
+              [class.active]="page === currentPage"
+              (click)="goToPage(page)">
+              {{ page }}
+            </button>
+            
+            <button class="page-btn" (click)="nextPage()" [disabled]="currentPage === totalPages">
+              Next <i class="fas fa-chevron-right"></i>
+            </button>
+          </div>
+        </div>
+
+      </main>
+    </div>
+  </div>
+
+  <!-- EDIT MODE -->
+  <div *ngIf="currentView === 'edit'" class="edit-container">
+    <div class="header">
+      <h2>Edit Negotiation #{{ negotiationId }}</h2>
+      <button class="btn-back" (click)="switchView('list')">
+        <i class="fas fa-arrow-left"></i> Back to List
+      </button>
+    </div>
+
+    <div *ngIf="isLoading" class="loading">
+      <i class="fas fa-spinner fa-spin"></i> Loading...
+    </div>
+
+    <div *ngIf="errorMessage" class="alert alert-error">
+      <i class="fas fa-exclamation-triangle"></i> {{ errorMessage }}
+    </div>
+    
+    <div *ngIf="successMessage" class="alert alert-success">
+      <i class="fas fa-check-circle"></i> {{ successMessage }}
+    </div>
+
+    <div *ngIf="!isLoading && currentNegotiation" class="edit-form">
+      <div class="info-section">
+        <h3><i class="fas fa-info-circle"></i> Negotiation Information</h3>
+        <div class="info-grid">
+          <div class="info-item">
+            <label>Negotiation ID:</label>
+            <span>NEG-{{ currentNegotiation.negotiationId }}</span>
+          </div>
+          <div class="info-item">
+            <label>Event ID:</label>
+            <span>{{ currentNegotiation.eventId }} - {{ getEventName(currentNegotiation.eventId) }}</span>
+          </div>
+          <div class="info-item">
+            <label>Vendor ID:</label>
+            <span>{{ currentNegotiation.vendorId }} - {{ getVendorName(currentNegotiation.vendorId) }}</span>
+          </div>
+          <div class="info-item">
+            <label>Initial Quote:</label>
+            <span class="amount">{{ currentNegotiation.initialquoteamount | currency:'USD':'symbol':'1.2-2' }}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-section">
+        <h3><i class="fas fa-edit"></i> Update Negotiation</h3>
+        
+        <div class="form-group">
+          <label for="status">Status <span class="required">*</span></label>
+          <select 
+            id="status" 
+            [(ngModel)]="currentNegotiation.negotiationstatus" 
+            class="form-control" 
+            [disabled]="isSaving">
+            <option value="PENDING">Pending</option>
+            <option value="APPROVED">Approved</option>
+            <option value="REJECTED">Rejected</option>
+            <option value="CANCELED">Canceled</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="finalQuote">Final Quote Amount <span class="required">*</span></label>
+          <input 
+            type="number" 
+            id="finalQuote" 
+            [(ngModel)]="currentNegotiation.finalquoteamount" 
+            class="form-control" 
+            [disabled]="isSaving"
+            step="0.01"
+            min="0"
+            placeholder="Enter final quote amount">
+        </div>
+
+        <div class="savings-section" *ngIf="currentNegotiation.finalquoteamount">
+          <div class="savings-box">
+            <label>Savings:</label>
+            <span class="savings-value positive">
+              {{ calculateNegotiationSavings() | currency:'USD':'symbol':'1.2-2' }} 
+              ({{ calculateSavingsPercentage() | number:'1.1-1' }}%)
+            </span>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Negotiation Date</label>
+          <div class="info-display">
+            {{ currentNegotiation.negotiationDate | date:'dd/MM/yyyy' }}
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="negotiationComments">Negotiation Comments/Description</label>
+          <textarea 
+            id="negotiationComments"
+            [(ngModel)]="currentNegotiation.comments" 
+            class="form-control"
+            [disabled]="isSaving"
+            rows="4"
+            placeholder="Enter negotiation comments, reasons for amount changes, terms discussed, or any additional notes...">
+          </textarea>
+          <small style="color: #666; font-size: 12px; margin-top: 5px; display: block;">
+            Add any relevant details about the negotiation process, agreements reached, or important notes.
+          </small>
+        </div>
+      </div>
+
+      <div class="button-group">
+        <button 
+          class="btn btn-primary" 
+          (click)="updateNegotiation()" 
+          [disabled]="isSaving || !isFormValid()">
+          <i class="fas fa-save"></i>
+          <span *ngIf="!isSaving">Save Changes</span>
+          <span *ngIf="isSaving">Saving...</span>
+        </button>
+        <button 
+          class="btn btn-secondary" 
+          (click)="updateStatusOnly()" 
+          [disabled]="isSaving">
+          <i class="fas fa-flag"></i> Update Status Only
+        </button>
+        <button 
+          class="btn btn-cancel" 
+          (click)="cancelEdit()" 
+          [disabled]="isSaving">
+          <i class="fas fa-times"></i> Cancel
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ORIGINAL REVIEW MODE (for PR negotiation) -->
+  <div *ngIf="currentView === 'review'" class="review-container">
+    <div class="header">
+      <h2>Review & Negotiate Purchase Request</h2>
+      <button class="btn btn-secondary" (click)="navigateTo('/dashboard')">
+        <i class="fas fa-arrow-left"></i> Back to Dashboard
+      </button>
+    </div>
+
+    <!-- No PR Selected State -->
+    <div class="no-selection" *ngIf="!selectedPR">
+      <div class="empty-state">
+        <i class="fas fa-file-contract"></i>
+        <h3>No Purchase Request Selected</h3>
+        <p>Please select a purchase request from the dashboard to begin negotiation.</p>
+        <button class="btn btn-primary" (click)="navigateTo('/dashboard')">
+          Go to Dashboard
+        </button>
+      </div>
+    </div>
+
+    <!-- PR Selected State -->
+    <div *ngIf="selectedPR" class="negotiation-content">
+      
+      <!-- Tabs -->
+      <div class="tabs">
+        <button 
+          class="tab-btn" 
+          [class.active]="activeTab === 'review'"
+          (click)="activeTab = 'review'">
+          <i class="fas fa-eye"></i> Review Details
+        </button>
+        <button 
+          class="tab-btn" 
+          [class.active]="activeTab === 'negotiate'"
+          (click)="activeTab = 'negotiate'">
+          <i class="fas fa-handshake"></i> Negotiate
+        </button>
+      </div>
+
+      <!-- Review Tab -->
+      <div *ngIf="activeTab === 'review'" class="tab-content">
+        <div class="pr-summary">
+          <div class="summary-header">
+            <h3>Purchase Request Summary</h3>
+            <span class="status-badge" [ngClass]="getStatusClass()">
+              {{ selectedPR.prstatus }}
+            </span>
+          </div>
+
+          <div class="detail-grid">
+            <div class="detail-item">
+              <label>PR ID:</label>
+              <span>{{ selectedPR.prId }}</span>
+            </div>
+            <div class="detail-item">
+              <label>Event:</label>
+              <span>{{ selectedPR.eventId }} - {{ eventName }}</span>
+            </div>
+            <div class="detail-item">
+              <label>Vendor:</label>
+              <span>{{ selectedPR.vendorId }} - {{ vendorName }}</span>
+            </div>
+            <div class="detail-item">
+              <label>Allocated Amount:</label>
+              <span class="amount">{{ selectedPR.allocatedamount | currency:'USD':'symbol':'1.2-2' }}</span>
+            </div>
+            <div class="detail-item">
+              <label>Request Date:</label>
+              <span>{{ selectedPR.requestLocalDate | date:'dd/MM/yyyy' }}</span>
+            </div>
+            <div class="detail-item">
+              <label>Status:</label>
+              <span class="status-badge" [ngClass]="getStatusClass()">
+                {{ selectedPR.prstatus }}
+              </span>
+            </div>
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="action-buttons">
+            <button 
+              class="btn btn-success" 
+              (click)="approvePR()"
+              [disabled]="selectedPR.prstatus === 'APPROVED'">
+              <i class="fas fa-check"></i> Approve
+            </button>
+            <button 
+              class="btn btn-primary" 
+              (click)="startNegotiation()"
+              [disabled]="selectedPR.prstatus === 'REJECTED'">
+              <i class="fas fa-handshake"></i> Start Negotiation
+            </button>
+            <button 
+              class="btn btn-danger" 
+              (click)="rejectPR()"
+              [disabled]="selectedPR.prstatus === 'REJECTED'">
+              <i class="fas fa-times"></i> Reject
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Negotiate Tab -->
+      <div *ngIf="activeTab === 'negotiate'" class="tab-content">
+        <div class="negotiation-panel">
+          <h3>Negotiation Details</h3>
+          
+          <div class="current-amount">
+            <label>Current Allocated Amount:</label>
+            <span class="amount">{{ selectedPR.allocatedamount | currency:'USD':'symbol':'1.2-2' }}</span>
+          </div>
+
+          <div class="form-group">
+            <label for="proposedAmount">Proposed Amount ($):</label>
+            <input 
+              type="number" 
+              id="proposedAmount"
+              [(ngModel)]="proposedAmount" 
+              class="form-control"
+              [disabled]="!isNegotiating"
+              step="0.01"
+              min="0">
+          </div>
+
+          <div class="form-group">
+            <label for="negotiationNotes">Negotiation Notes:</label>
+            <textarea 
+              id="negotiationNotes"
+              [(ngModel)]="negotiationNotes" 
+              class="form-control"
+              [disabled]="!isNegotiating"
+              rows="4"
+              placeholder="Enter your negotiation notes here..."></textarea>
+          </div>
+
+          <div class="savings-display" *ngIf="proposedAmount > 0 && proposedAmount !== selectedPR.allocatedamount">
+            <div class="savings-amount" [ngClass]="{
+              'positive': (selectedPR.allocatedamount - proposedAmount) > 0,
+              'negative': (selectedPR.allocatedamount - proposedAmount) < 0
+            }">
+              <span class="label">Expected Savings:</span>
+              <span class="value">
+                {{ (selectedPR.allocatedamount - proposedAmount) | currency:'USD':'symbol':'1.2-2' }}
+                <small>({{ ((selectedPR.allocatedamount - proposedAmount) / selectedPR.allocatedamount * 100) | number:'1.1-1' }}%)</small>
+              </span>
+            </div>
+          </div>
+
+          <div class="negotiation-actions">
+            <button 
+              *ngIf="!isNegotiating" 
+              class="btn btn-primary" 
+              (click)="startNegotiation()">
+              <i class="fas fa-play"></i> Start Negotiation
+            </button>
+            
+            <div *ngIf="isNegotiating" class="active-negotiation-buttons">
+              <button 
+                class="btn btn-success" 
+                (click)="submitNegotiation()">
+                <i class="fas fa-check"></i> Submit Negotiation
+              </button>
+              <button 
+                class="btn btn-secondary" 
+                (click)="cancelNegotiation()">
+                <i class="fas fa-times"></i> Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+
+
+      </div>
+    </div>
+  </div>

@@ -1,0 +1,215 @@
+<div class="edit-container">
+  <div class="header">
+    <h2>Edit Negotiation #{{ negotiationId }}</h2>
+    <button class="btn-back" (click)="cancel()">
+      <i class="fas fa-list"></i> Back to List
+    </button>
+  </div>
+
+  <div *ngIf="isLoading" class="loading">
+    <i class="fas fa-spinner fa-spin fa-2x"></i>
+    <p>Loading negotiation details...</p>
+  </div>
+
+  <div *ngIf="errorMessage" class="alert alert-error">
+    <i class="fas fa-exclamation-circle"></i> {{ errorMessage }}
+  </div>
+  
+  <div *ngIf="successMessage" class="alert alert-success">
+    <i class="fas fa-check-circle"></i> {{ successMessage }}
+  </div>
+
+  <!-- Frozen Form Notice -->
+  <div *ngIf="isFormFrozen" class="frozen-notice">
+    <i class="fas fa-lock"></i>
+    <span>This negotiation has been saved and is now read-only. All fields are locked to prevent further changes.</span>
+  </div>
+
+  <div *ngIf="!isLoading" class="edit-form">
+    <!-- Negotiation Information Section -->
+    <div class="info-section" *ngIf="negotiation">
+      <h3><i class="fas fa-info-circle"></i> Negotiation Information</h3>
+      <div class="info-grid">
+        <div class="info-item">
+          <label>Negotiation ID:</label>
+          <span>NEG-{{ negotiation.negotiationid || negotiation.negotiationId }}</span>
+        </div>
+        <div class="info-item">
+          <label>Event:</label>
+          <span>{{ eventName }}</span>
+        </div>
+        <div class="info-item">
+          <label>Vendor:</label>
+          <span>{{ vendorName }}</span>
+        </div>
+        <div class="info-item">
+          <label>Initial Quote:</label>
+          <span class="amount">₹{{ negotiation.initialquoteamount | number:'1.2-2' }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Update Form Section - Always show this section -->
+    <div class="form-section" [class.frozen]="isFormFrozen">
+      <h3><i class="fas fa-edit"></i> Update Negotiation</h3>
+      
+      <!-- Status Field -->
+      <div class="form-group">
+        <label for="status">Status <span class="required">*</span></label>
+        <select 
+          id="status" 
+          [(ngModel)]="negotiation.negotiationstatus" 
+          (ngModelChange)="onStatusChange()"
+          class="form-control" 
+          [disabled]="isSaving || isFormFrozen">
+          <option value="">Select Status</option>
+          <option *ngFor="let status of statusOptions" [value]="status">{{ status }}</option>
+        </select>
+      </div>
+      
+      <!-- Final Quote Amount Field -->
+      <div class="form-group">
+        <label for="finalQuote">Final Quote Amount <span class="required">*</span></label>
+        <div style="position: relative;">
+          <input 
+            type="number" 
+            id="finalQuote" 
+            [(ngModel)]="negotiation.finalquoteamount" 
+            class="form-control" 
+            [disabled]="isSaving || isFormFrozen"
+            step="0.01"
+            min="0"
+            placeholder="Enter final quote amount">
+        </div>
+      </div>
+      
+      <!-- Savings Calculation -->
+      <div class="savings-section" *ngIf="negotiation?.finalquoteamount && negotiation.finalquoteamount > 0">
+        <div class="savings-box">
+          <label>Savings:</label>
+          <span class="savings-value positive">
+            ₹{{ calculateSavings() | number:'1.2-2' }} 
+            ({{ calculateSavingsPercentage() | number:'1.1-1' }}%)
+          </span>
+        </div>
+      </div>
+
+      <!-- Negotiation Date Field (Static/Read-only) -->
+      <div class="form-group">
+        <label>Negotiation Date</label>
+        <div class="info-display" style="padding: 8px; background-color: #f8f9fa; border: 1px solid #dee2e6; border-radius: 4px; color: #495057;">
+          {{ negotiation?.negotiationDate | date:'dd/MM/yyyy' }}
+        </div>
+      </div>
+
+      <!-- Approval Date Field (shown when status is APPROVED) -->
+      <div class="form-group" *ngIf="negotiation?.negotiationstatus?.toLowerCase() === 'approved'">
+        <label for="approvalDate">Date of Approval <span class="required">*</span></label>
+        <input 
+          type="date" 
+          id="approvalDate" 
+          [(ngModel)]="negotiation.approvalDate" 
+          class="form-control" 
+          [disabled]="isSaving || isFormFrozen">
+      </div>
+
+      <!-- Rejection Date Field (shown when status is REJECTED) -->
+      <div class="form-group" *ngIf="negotiation?.negotiationstatus?.toLowerCase() === 'rejected'">
+        <label for="rejectionDate">Date of Rejection <span class="required">*</span></label>
+        <input 
+          type="date" 
+          id="rejectionDate" 
+          [(ngModel)]="negotiation.rejectionDate" 
+          class="form-control" 
+          [disabled]="isSaving || isFormFrozen">
+      </div>
+
+      <!-- Rejection Reason Field (shown when status is REJECTED) -->
+      <div class="form-group" *ngIf="negotiation?.negotiationstatus?.toLowerCase() === 'rejected'">
+        <label for="rejectionReason">Reason for Rejection <span class="required">*</span></label>
+        <textarea 
+          id="rejectionReason" 
+          [(ngModel)]="negotiation.rejectionReason" 
+          class="form-control" 
+          [disabled]="isSaving || isFormFrozen"
+          rows="3"
+          placeholder="Please provide the reason for rejection..."></textarea>
+      </div>
+
+      <!-- Negotiation Comments/Description Field -->
+      <div class="form-group">
+        <label for="negotiationComments">
+          Negotiation Comments/Description <span class="required-asterisk">*</span>
+          <span class="character-count">({{ getCommentsLength() }}/1000 characters)</span>
+        </label>
+        <textarea 
+          id="negotiationComments"
+          [(ngModel)]="negotiation.comments" 
+          (input)="onCommentsChange()"
+          class="form-control"
+          [class.error]="isCommentsInvalid()"
+          [disabled]="isSaving || isFormFrozen"
+          rows="4"
+          maxlength="1000"
+          required
+          placeholder="Enter negotiation comments, reasons for amount changes, terms discussed, or any additional notes...">
+        </textarea>
+        <small class="help-text" style="color: #666; font-size: 12px; margin-top: 5px; display: block;">
+          Add any relevant details about the negotiation process, agreements reached, or important notes.
+        </small>
+        <small *ngIf="saveAttempted && isCommentsActuallyInvalid()" class="error-text">
+          <span *ngIf="isCommentsEmpty()">Comments are required.</span>
+          <span *ngIf="!isCommentsEmpty() && isCommentsMaxLength()">Comments cannot exceed 1000 characters.</span>
+        </small>
+      </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="button-group">
+      <button 
+        class="btn btn-primary" 
+        (click)="updateNegotiation()" 
+        [disabled]="isSaving || !isFormValid() || isFormFrozen">
+        <i class="fas fa-save"></i>
+        <span *ngIf="!isSaving && !isFormFrozen">Save Changes</span>
+        <span *ngIf="isSaving">Saving...</span>
+        <span *ngIf="isFormFrozen">Saved</span>
+      </button>
+      <button 
+        class="btn btn-cancel" 
+        (click)="cancel()" 
+        [disabled]="isSaving">
+        <i class="fas fa-times"></i> 
+        <span *ngIf="!isFormFrozen">Cancel</span>
+        <span *ngIf="isFormFrozen">Back to List</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Custom Confirmation Dialog -->
+  <div class="dialog-overlay" *ngIf="showConfirmDialog" (click)="cancelApproval()">
+    <div class="dialog-box" (click)="$event.stopPropagation()">
+      <div class="dialog-header">
+        <h3><i class="fas fa-exclamation-triangle"></i> 
+          Confirm {{confirmationStatus === 'APPROVED' ? 'Approval' : 'Rejection'}}
+        </h3>
+      </div>
+      <div class="dialog-content">
+        <p *ngIf="confirmationStatus === 'APPROVED'">
+          This will approve the negotiation and generate a Purchase Order. Continue?
+        </p>
+        <p *ngIf="confirmationStatus === 'REJECTED'">
+          This will reject the negotiation. This action cannot be undone. Continue?
+        </p>
+      </div>
+      <div class="dialog-actions">
+        <button class="btn btn-primary" (click)="confirmApproval()">
+          <i class="fas fa-check"></i> Yes, Continue
+        </button>
+        <button class="btn btn-secondary" (click)="cancelApproval()">
+          <i class="fas fa-times"></i> Cancel
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
