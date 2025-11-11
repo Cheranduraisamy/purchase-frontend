@@ -27,7 +27,7 @@ export class NegotiationInitiateComponent implements OnInit, OnDestroy {
   // Form fields
   negotiationData: any = {
     prId: 0,
-    eventId: 0,
+    gCrossNumber: 0,
     vendorId: 0,
     initialQuoteAmount: 0,
     negotiationDate: ''
@@ -70,10 +70,18 @@ export class NegotiationInitiateComponent implements OnInit, OnDestroy {
         // Use data from sessionStorage
         this.purchaseRequest = JSON.parse(storedPR);
         this.allVendors = JSON.parse(storedVendors);
-        this.allEvents = JSON.parse(storedEvents);
+        const rawEvents = JSON.parse(storedEvents);
+        // Normalize event field names to ensure consistent structure
+        this.allEvents = rawEvents.map((event: any) => ({
+          gCrossNumber: event.gCrossNumber || event.GCROSS_NUMBER || event.gcross_number || 0,
+          eventname: event.eventname || event.EVENTNAME || '',
+          GCROSS_NUMBER: event.GCROSS_NUMBER,
+          gcross_number: event.gcross_number,
+          EVENTNAME: event.EVENTNAME
+        }));
         
         // Pre-fill form with PR data
-        this.negotiationData.eventId = this.purchaseRequest.eventId || 0;
+        this.negotiationData.gCrossNumber = this.purchaseRequest.gCrossNumber || 0;
         this.negotiationData.vendorId = this.purchaseRequest.vendorId || 0;
         this.negotiationData.initialQuoteAmount = this.purchaseRequest.allocatedamount || 0;
         
@@ -108,10 +116,17 @@ export class NegotiationInitiateComponent implements OnInit, OnDestroy {
       next: ({ prDetails, vendors, events }) => {
         this.purchaseRequest = prDetails;
         this.allVendors = vendors;
-        this.allEvents = events;
+        // Normalize event field names to ensure consistent structure
+        this.allEvents = events.map(event => ({
+          gCrossNumber: event.gCrossNumber || event.GCROSS_NUMBER || event.gcross_number || 0,
+          eventname: event.eventname || event.EVENTNAME || '',
+          GCROSS_NUMBER: event.GCROSS_NUMBER,
+          gcross_number: event.gcross_number,
+          EVENTNAME: event.EVENTNAME
+        }));
         
         // Pre-fill form with PR data
-        this.negotiationData.eventId = prDetails.eventId || 0;
+        this.negotiationData.gCrossNumber = prDetails.gCrossNumber || 0;
         this.negotiationData.vendorId = prDetails.vendorId || 0;
         this.negotiationData.initialQuoteAmount = prDetails.allocatedamount || 0;
         
@@ -134,8 +149,11 @@ export class NegotiationInitiateComponent implements OnInit, OnDestroy {
     this.vendorName = vendor ? vendor.vendorname : 'Unknown Vendor';
     
     // Find event name
-    const event = this.allEvents.find(e => e.eventId === this.purchaseRequest.eventId);
-    this.eventName = event ? event.eventname : 'Unknown Event';
+    const event = this.allEvents.find(e => {
+      const eventGCrossNumber = e.gCrossNumber || e.GCROSS_NUMBER || e.gcross_number;
+      return eventGCrossNumber === this.purchaseRequest.gCrossNumber;
+    });
+    this.eventName = event ? (event.eventname || event.EVENTNAME || 'Unknown Event') : 'Unknown Event';
   }
 
   formatDateForInput(date: Date): string {
@@ -147,7 +165,7 @@ export class NegotiationInitiateComponent implements OnInit, OnDestroy {
 
   initiateNegotiation(): void {
     // Validate form
-    if (!this.negotiationData.eventId || !this.negotiationData.vendorId || !this.negotiationData.initialQuoteAmount) {
+    if (!this.negotiationData.gCrossNumber || !this.negotiationData.vendorId || !this.negotiationData.initialQuoteAmount) {
       this.errorMessage = 'Please fill in all required fields';
       return;
     }

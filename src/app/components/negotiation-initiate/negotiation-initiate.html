@@ -29,8 +29,8 @@
           <span>{{ purchaseRequest.vendorId }} - {{ vendorName }}</span>
         </div>
         <div class="info-item">
-          <label>Event:</label>
-          <span>{{ purchaseRequest.eventId }} - {{ eventName }}</span>
+          <label>G Cross Number:</label>
+          <span>{{ purchaseRequest.gCrossNumber }} - {{ eventName }}</span>
         </div>
         <div class="info-item">
           <label>Estimated Amount:</label>
@@ -48,16 +48,16 @@
       <h3>Negotiation Details</h3>
 
       <div class="form-group">
-        <label for="eventId">Event <span class="required">*</span></label>
+        <label for="gCrossNumber">G Cross Number <span class="required">*</span></label>
         <select 
-          id="eventId"
-          [(ngModel)]="negotiationData.eventId"
+          id="gCrossNumber"
+          [(ngModel)]="negotiationData.gCrossNumber"
           class="form-control"
           required
           [disabled]="isSaving">
-          <option value="" disabled>Select Event</option>
-          <option *ngFor="let event of allEvents" [value]="event.eventId">
-            {{ event.eventId }} - {{ event.eventname }}
+          <option value="" disabled>Select G Cross Number</option>
+          <option *ngFor="let event of allEvents" [value]="event.gCrossNumber">
+            {{ event.gCrossNumber }} - {{ event.eventname }}
           </option>
         </select>
       </div>

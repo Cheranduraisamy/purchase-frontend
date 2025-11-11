@@ -4,7 +4,10 @@ import { HttpClient } from '@angular/common/http';
 
 export interface purchaserequests {
    prId?: number;
-   eventId: number;
+   gCrossNumber: number | null;     // Primary field (normalized), null when no event assigned
+   gcrossNumber?: number | null;    // Backend field name (lowercase 'c')
+   GCROSS_NUMBER?: number | null;   // Uppercase version from DB
+   gcross_number?: number | null;   // lowercase version
    vendorId: number;
    allocatedamount: number;
    prstatus: string;
@@ -21,8 +24,15 @@ export interface Vendor {
 }
 
 export interface Event {
-    eventId: number;
-    eventname: string;
+    gCrossNumber: number;     // Primary field (normalized)
+    GCROSS_NUMBER?: number;   // Uppercase version from DB
+    gcross_number?: number;   // lowercase version
+    gcrossNumber?: number;    // Alternative camelCase
+    gCross_Number?: number;   // Mixed case
+    eventname: string;        // Primary field (normalized)
+    EVENTNAME?: string;       // Uppercase version from DB
+    eventName?: string;       // Alternative camelCase
+    event_name?: string;      // Snake case
 }
 
 export interface EnrichedPurchaseRequest extends purchaserequests {

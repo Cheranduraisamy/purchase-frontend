@@ -3,6 +3,8 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { PurchaseService } from '../../services/purchase.service';
+import { Request } from '../../service/request';
+import { Event } from '../../service/request';
 
 @Component({
   selector: 'app-negotiation-edit',
@@ -30,6 +32,7 @@ export class NegotiationEditComponent implements OnInit {
   successMessage = '';
   negotiationId: number = 0;
   statusOptions = ['PENDING', 'APPROVED', 'REJECTED'];
+  allEvents: Event[] = [];
   eventName = '';
   vendorName = '';
   showConfirmDialog = false;
@@ -42,7 +45,8 @@ export class NegotiationEditComponent implements OnInit {
   constructor(
     private route: ActivatedRoute,
     private router: Router,
-    private purchaseService: PurchaseService
+    private purchaseService: PurchaseService,
+    private requestService: Request
   ) {}
 
   ngOnInit(): void {
@@ -52,6 +56,25 @@ export class NegotiationEditComponent implements OnInit {
       
       // Check if this negotiation was previously saved and should remain frozen
       this.checkIfNegotiationShouldBeFrozen();
+    });
+    
+    // Load all events for G Cross Number display
+    this.requestService.getAllEvents().subscribe({
+      next: (events: Event[]) => {
+        // Normalize event field names to ensure consistent structure
+        this.allEvents = events.map(event => ({
+          gCrossNumber: event.gcrossNumber || event.gCrossNumber || event.GCROSS_NUMBER || event.gcross_number || 0,
+          eventname: event.eventname || event.EVENTNAME || '',
+          GCROSS_NUMBER: event.GCROSS_NUMBER,
+          gcross_number: event.gcross_number,
+          gcrossNumber: event.gcrossNumber,
+          EVENTNAME: event.EVENTNAME
+        }));
+        
+        // Update event name after events are loaded
+        this.updateEventName();
+      },
+      error: (error: any) => console.error('Error loading events in negotiation-edit:', error)
     });
     
     // Ensure comments field is always initialized
@@ -141,13 +164,15 @@ export class NegotiationEditComponent implements OnInit {
       this.vendorName = `Vendor ${this.negotiation.vendorid || this.negotiation.vendorId}`;
     }
 
-    // For event name, we'll create a formatted name since we don't have an API endpoint
-    // This can be enhanced later when event details API is available
-    const eventId = this.negotiation.eventid || this.negotiation.eventId;
-    this.eventName = `Event ${eventId}`;
+    // For event name, it will be set by updateEventName() after events are loaded
+    // This ensures events are available when getEventName() is called
+    // If events are already loaded, update the event name now
+    if (this.allEvents.length > 0) {
+      this.updateEventName();
+    }
     
     // TODO: Replace with actual API calls when available
-    // this.loadEventDetails(eventId);
+    // this.loadEventDetails(gCrossNumber);
     // this.loadVendorDetails(vendorId);
   }
 
@@ -551,6 +576,36 @@ export class NegotiationEditComponent implements OnInit {
     } catch (e) {
       console.warn('Error removing negotiation from saved list:', e);
     }
+  }
+
+  updateEventName(): void {
+    if (this.negotiation && this.allEvents.length > 0) {
+      // Normalize the gCrossNumber field from backend data
+      const normalizedNego = {
+        ...this.negotiation,
+        gCrossNumber: this.negotiation.gCrossNumber || this.negotiation.gcrossNumber || this.negotiation.GCROSS_NUMBER || 0
+      };
+      this.negotiation = normalizedNego;
+      
+      const gCrossNumber = this.negotiation.gCrossNumber;
+      this.eventName = this.getEventName(gCrossNumber);
+    }
+  }
+
+  getEventName(gCrossNumber: number | undefined): string {
+    if (!gCrossNumber || gCrossNumber === 0) return 'N/A';
+    
+    const event = this.allEvents.find(e => {
+      const eventGCrossNumber = e.gcrossNumber || e.gCrossNumber || e.GCROSS_NUMBER || e.gcross_number;
+      return eventGCrossNumber === gCrossNumber;
+    });
+    
+    if (event) {
+      const eventName = event.eventname || event.EVENTNAME;
+      return eventName ? `${gCrossNumber} - ${eventName}` : `${gCrossNumber}`;
+    }
+    
+    return `${gCrossNumber}`;
   }
 
   cancel(): void {

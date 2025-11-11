@@ -93,13 +93,13 @@
                         </div>
                         
                         <div class="filter-group">
-                            <label for="eventFilter">Event ID:</label>
+                            <label for="eventFilter">G Cross Number:</label>
                             <input 
                                 type="text" 
                                 id="eventFilter"
-                                [(ngModel)]="filters.eventIdOrName" 
+                                [(ngModel)]="filters.gCrossNumberOrName" 
                                 (input)="onFilterChange()"
-                                placeholder="Enter Event ID or Name"
+                                placeholder="Enter G Cross Number or Name"
                                 class="filter-input">
                         </div>
                         
@@ -141,7 +141,7 @@
                     <thead>
                         <tr>
                             <th class="sortable">PR ID <i class="fas fa-sort"></i></th>
-                            <th class="sortable">Event ID <i class="fas fa-sort"></i></th>
+                            <th class="sortable">G Cross Number <i class="fas fa-sort"></i></th>
                             <th class="sortable">Vendor ID <i class="fas fa-sort"></i></th>
                             <th class="sortable multi-line-header">
                                 <span class="header-text">Allocated<br>Amount</span>
@@ -158,7 +158,7 @@
                     <tbody>
                         <tr *ngFor="let pr of paginatedPurchaseRequests; let i = index">
                             <td>{{ pr.prId }}</td>
-                            <td>{{ pr.eventId }} - {{ getEventName(pr.eventId) }}</td>
+                            <td>{{ getEventName(pr.gCrossNumber) }}</td>
                             <td>{{ pr.vendorId }} - {{ getVendorName(pr.vendorId) }}</td>
                             <td>₹{{ pr.allocatedamount | number:'1.2-2' }}</td>
                             <td>
@@ -233,25 +233,33 @@
                     <div class="modal-body">
                         <form class="purchase-form">
                             <div class="form-group">
-                                <label for="modal-eventId">Event ID:</label>
-                                <input 
-                                    type="number" 
-                                    id="modal-eventId" 
-                                    [(ngModel)]="purchaserequest.eventId" 
-                                    name="eventId"
-                                    placeholder="Enter Event ID"
+                                <label for="modal-gCrossNumber">G Cross Number - Event:</label>
+                                <select 
+                                    id="modal-gCrossNumber" 
+                                    [(ngModel)]="purchaserequest.gCrossNumber" 
+                                    name="gCrossNumber"
+                                    class="form-select"
                                     required>
+                                    <option value="">Select Event</option>
+                                    <option *ngFor="let event of allEvents" [value]="event.gCrossNumber">
+                                        {{ event.gCrossNumber }} - {{ event.eventname }}
+                                    </option>
+                                </select>
                             </div>
 
                             <div class="form-group">
-                                <label for="modal-vendorId">Vendor ID:</label>
-                                <input 
-                                    type="number" 
+                                <label for="modal-vendorId">Vendor:</label>
+                                <select 
                                     id="modal-vendorId" 
                                     [(ngModel)]="purchaserequest.vendorId" 
                                     name="vendorId"
-                                    placeholder="Enter Vendor ID"
+                                    class="form-select"
                                     required>
+                                    <option value="">Select Vendor</option>
+                                    <option *ngFor="let vendor of allVendors" [value]="vendor.vendorId">
+                                        {{ vendor.vendorId }} - {{ vendor.vendorname }}
+                                    </option>
+                                </select>
                             </div>
 
                             <div class="form-group">
@@ -300,7 +308,7 @@
                                 <strong>PR ID:</strong> {{ currentEditingPR.prId }}
                             </div>
                             <div class="detail-row">
-                                <strong>Event ID:</strong> {{ currentEditingPR.eventId }} - {{ getEventName(currentEditingPR.eventId) }}
+                                <strong>G Cross Number:</strong> {{ getEventName(currentEditingPR.gCrossNumber) }}
                             </div>
                             <div class="detail-row">
                                 <strong>Vendor ID:</strong> {{ currentEditingPR.vendorId }} - {{ getVendorName(currentEditingPR.vendorId) }}
@@ -380,8 +388,8 @@
                                     <span class="value-view">{{ currentViewingPR.prId }}</span>
                                 </div>
                                 <div class="detail-row-view">
-                                    <span class="label-view">Event:</span>
-                                    <span class="value-view">{{ currentViewingPR.eventId }} - {{ getEventName(currentViewingPR.eventId) }}</span>
+                                    <span class="label-view">G Cross Number:</span>
+                                    <span class="value-view">{{ getEventName(currentViewingPR.gCrossNumber) }}</span>
                                 </div>
                                 <div class="detail-row-view">
                                     <span class="label-view">Vendor:</span>

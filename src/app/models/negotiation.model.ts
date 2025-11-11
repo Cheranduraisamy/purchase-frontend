@@ -4,7 +4,7 @@ import { PurchaseRequest } from './pr.model';
 // Main Negotiation entity (matches backend response)
 export interface Negotiation {
   negotiationid: number;  // Matches backend field name (lowercase)
-  eventid: number;        // Matches backend field name (lowercase)
+  gCrossNumber: number;   // Maps to GCROSS_NUMBER from backend
   vendorid: number;       // Matches backend field name (lowercase)
   initialquoteamount: number;
   finalquoteamount?: number;
@@ -25,7 +25,7 @@ export interface Negotiation {
 // DTO for initiating a negotiation (matches backend InitiateNegotiationRequest)
 export interface InitiateNegotiationRequest {
   prId: number;
-  eventId: number;
+  gCrossNumber: number;
   vendorId: number;
   initialQuoteAmount: number;
   negotiationDate?: string; // YYYY-MM-DD format

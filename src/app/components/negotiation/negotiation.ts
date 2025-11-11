@@ -13,7 +13,7 @@ import { of, Subject } from 'rxjs';
 interface NegotiationItem {
   negotiationId: number;  // Updated to match API response
   purchaseRequest?: PurchaseRequest;
-  eventId: number;        // Updated to match API response
+  gCrossNumber: number;        // Updated to match API response
   vendorId: number;       // Updated to match API response
   initialquoteamount: number;
   finalquoteamount?: number;
@@ -140,7 +140,17 @@ export class NegotiationComponent implements OnInit {
 
     this.requestService.getAllEvents().subscribe({
       next: (events) => {
-        this.allEvents = events;
+        console.log('Raw events from backend:', events);
+        console.log('First event object keys:', Object.keys(events[0] || {}));
+        console.log('First event raw object:', events[0]);
+        
+        // Normalize event field names to match backend - prioritize gcrossNumber (lowercase 'c')
+        this.allEvents = events.map(event => ({
+          gCrossNumber: event.gcrossNumber || event.gCrossNumber || event.GCROSS_NUMBER || event.gcross_number || 0,
+          eventname: event.eventname || event.eventName || event.EVENTNAME || event.event_name || 'Unknown'
+        }));
+        console.log('Loaded Events:', this.allEvents);
+        console.log('Events structure:', this.allEvents.map(e => ({ gCrossNumber: e.gCrossNumber, eventname: e.eventname })));
         this.updateEventName();
       },
       error: (error) => console.error('Error loading events:', error)
@@ -167,8 +177,11 @@ export class NegotiationComponent implements OnInit {
 
   updateEventName(): void {
     if (this.selectedPR && this.allEvents.length > 0) {
-      const event = this.allEvents.find(e => e.eventId === this.selectedPR!.eventId);
-      this.eventName = event ? event.eventname : 'Unknown Event';
+      const event = this.allEvents.find(e => {
+        const eventGCrossNumber = e.gCrossNumber || e.GCROSS_NUMBER || e.gcross_number;
+        return eventGCrossNumber === this.selectedPR!.gCrossNumber;
+      });
+      this.eventName = event ? (event.eventname || event.EVENTNAME || 'Unknown Event') : 'Unknown Event';
     }
   }
 
@@ -343,7 +356,11 @@ export class NegotiationComponent implements OnInit {
       }),
       finalize(() => this.isLoading = false)
     ).subscribe(data => {
-      this.negotiations = data || [];
+      // Normalize field names - backend may send gcrossNumber (lowercase) instead of gCrossNumber
+      this.negotiations = (data || []).map((nego: any) => ({
+        ...nego,
+        gCrossNumber: nego.gcrossNumber || nego.gCrossNumber || nego.GCROSS_NUMBER || 0
+      }));
       console.log('Loaded negotiations:', this.negotiations);
       console.log('Negotiations count:', this.negotiations.length);
       
@@ -436,9 +453,9 @@ export class NegotiationComponent implements OnInit {
           aValue = a.purchaseRequest?.prId || 0;
           bValue = b.purchaseRequest?.prId || 0;
           break;
-        case 'eventId':
-          aValue = a.eventid;
-          bValue = b.eventid;
+        case 'gCrossNumber':
+          aValue = a.gCrossNumber;
+          bValue = b.gCrossNumber;
           break;
         case 'vendorId':
           aValue = a.vendorid;
@@ -608,7 +625,7 @@ Status: ${negotiation.negotiationstatus}${statusInfo}
 Initial Quote Amount: ₹${negotiation.initialquoteamount?.toLocaleString('en-IN') || 'N/A'}
 Final Quote Amount: ₹${negotiation.finalquoteamount?.toLocaleString('en-IN') || 'Pending'}
 Negotiation Date: ${negotiation.negotiationDate}
-Event ID: ${negotiation.eventid}
+G Cross Number: ${negotiation.gCrossNumber}
 Vendor ID: ${negotiation.vendorid}
 
 Best regards,
@@ -766,7 +783,7 @@ Purchase Management System`;
   private createPurchaseOrder(negotiation: Negotiation): void {
     // Create purchase order data based on the approved negotiation
     const purchaseOrderData = {
-      eventId: negotiation.eventid,
+      gCrossNumber: negotiation.gCrossNumber,
       vendorId: negotiation.vendorid,
       negotiationId: negotiation.negotiationid,
       prId: negotiation.purchaseRequest?.prId, // Get prId from the associated purchase request
@@ -853,10 +870,19 @@ Purchase Management System`;
   }
 
   // Helper methods for display
-  getEventName(eventId: number | undefined): string {
-    if (eventId === undefined) return 'N/A';
-    const event = this.allEvents.find(e => e.eventId === eventId);
-    return event ? event.eventname : 'N/A';
+  getEventName(gCrossNumber: number | undefined | null): string {
+    if (!gCrossNumber) {
+      return 'No G Cross Number Assigned';
+    }
+    
+    const event = this.allEvents.find(e => e.gCrossNumber === gCrossNumber);
+    
+    if (event) {
+      const result = `${gCrossNumber} - ${event.eventname}`;
+      return result;
+    }
+    
+    return `${gCrossNumber} - Event Not Found`;
   }
 
   getVendorName(vendorId: number | undefined): string {

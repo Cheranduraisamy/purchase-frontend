@@ -118,8 +118,8 @@
                 <th class="sortable" (click)="sortBy('prId')">
                   PR ID <i [class]="getSortIcon('prId')"></i>
                 </th>
-                <th class="sortable multi-line-header" (click)="sortBy('eventId')">
-                  <span class="header-text">Event<br>ID</span> <i [class]="getSortIcon('eventId')"></i>
+                <th class="sortable multi-line-header" (click)="sortBy('gCrossNumber')">
+                  <span class="header-text">G Cross<br>Number</span> <i [class]="getSortIcon('gCrossNumber')"></i>
                 </th>
                 <th class="sortable multi-line-header" (click)="sortBy('vendorId')">
                   <span class="header-text">Vendor<br>ID</span> <i [class]="getSortIcon('vendorId')"></i>
@@ -143,7 +143,7 @@
               <tr *ngFor="let nego of displayedNegotiations; let i = index">
                 <td>NEG-{{ nego.negotiationid }}</td>
                 <td>{{ nego.purchaseRequest?.prId || 'N/A' }}</td>
-                <td>{{ nego.eventid }} - {{ getEventName(nego.eventid) }}</td>
+                <td>{{ getEventName(nego.gCrossNumber) }}</td>
                 <td>{{ nego.vendorid }} - {{ getVendorName(nego.vendorid) }}</td>
                 <td>{{ nego.initialquoteamount | currency:'INR':'':'1.2-2' }}</td>
                 <td>
@@ -237,8 +237,8 @@
             <span>NEG-{{ currentNegotiation.negotiationId }}</span>
           </div>
           <div class="info-item">
-            <label>Event ID:</label>
-            <span>{{ currentNegotiation.eventId }} - {{ getEventName(currentNegotiation.eventId) }}</span>
+            <label>G Cross Number:</label>
+            <span>{{ getEventName(currentNegotiation.gCrossNumber) }}</span>
           </div>
           <div class="info-item">
             <label>Vendor ID:</label>
@@ -395,8 +395,8 @@
               <span>{{ selectedPR.prId }}</span>
             </div>
             <div class="detail-item">
-              <label>Event:</label>
-              <span>{{ selectedPR.eventId }} - {{ eventName }}</span>
+              <label>G Cross Number:</label>
+              <span>{{ selectedPR.gCrossNumber }} - {{ eventName }}</span>
             </div>
             <div class="detail-item">
               <label>Vendor:</label>

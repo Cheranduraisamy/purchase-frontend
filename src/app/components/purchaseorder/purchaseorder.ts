@@ -90,7 +90,6 @@ export class Purchaseorder implements OnInit {
     this.requestService.getAllVendors().subscribe({
       next: (vendors: Vendor[]) => {
         this.allVendors = vendors;
-        console.log('Vendors loaded:', vendors);
       },
       error: (error: any) => console.error('Error loading vendors:', error)
     });
@@ -98,8 +97,15 @@ export class Purchaseorder implements OnInit {
     // Load all events
     this.requestService.getAllEvents().subscribe({
       next: (events: Event[]) => {
-        this.allEvents = events;
-        console.log('Events loaded:', events);
+        // Normalize event field names to ensure consistent structure
+        this.allEvents = events.map(event => ({
+          gCrossNumber: event.gcrossNumber || event.gCrossNumber || event.GCROSS_NUMBER || event.gcross_number || 0,
+          eventname: event.eventname || event.EVENTNAME || '',
+          GCROSS_NUMBER: event.GCROSS_NUMBER,
+          gcross_number: event.gcross_number,
+          gcrossNumber: event.gcrossNumber,
+          EVENTNAME: event.EVENTNAME
+        }));
       },
       error: (error: any) => console.error('Error loading events:', error)
     });
@@ -194,21 +200,55 @@ export class Purchaseorder implements OnInit {
   loadAllPurchaseOrders(): void {
     this.loading = true;
 
-    this.purchaseOrderService.getAllPurchaseOrders().subscribe({
-      next: (data) => {
-        this.purchaseOrders = data;
-        this.calculatePoCounts(); 
-        this.applyFilters();
-        this.loading = false;
+    // Load Purchase Requests first to get G Cross Numbers
+    this.requestService.getallPurchaseRequests().subscribe({
+      next: (prData) => {
+        // Create a map of PR ID -> G Cross Number
+        const prGCrossNumberMap = new Map();
+        prData.forEach((pr: any) => {
+          const gCrossNumber = pr.gCrossNumber || pr.gcrossNumber || pr.GCROSS_NUMBER || 0;
+          prGCrossNumberMap.set(pr.prid || pr.prId || pr.id, gCrossNumber);
+        });
+
+        // Now load Purchase Orders and map G Cross Numbers from PRs
+        this.purchaseOrderService.getAllPurchaseOrders().subscribe({
+          next: (data) => {
+            this.purchaseOrders = (data || []).map((po: any) => {
+              // Get G Cross Number from related PR
+              const prId = po.prid || po.prId || po.pr_id;
+              const gCrossNumberFromPR = prGCrossNumberMap.get(prId);
+              
+              // Try PO's own gCrossNumber first, then fall back to PR's gCrossNumber
+              const gCrossNumber = po.gCrossNumber || po.gcrossNumber || po.GCROSS_NUMBER || gCrossNumberFromPR || 0;
+              
+              return {
+                ...po,
+                gCrossNumber: gCrossNumber
+              };
+            });
+            
+            this.calculatePoCounts(); 
+            this.applyFilters();
+            this.loading = false;
+          },
+          error: (error) => {
+            this.loading = false;
+            this.showConfirmation(
+              'Error',
+              'Failed to load purchase orders. Please check your network connection and try again.',
+              'error'
+            );
+            console.error('Error loading purchase orders:', error);
+          }
+        });
       },
       error: (error) => {
         this.loading = false;
         this.showConfirmation(
           'Error',
-          'Failed to load purchase orders. Please check your network connection and try again.',
+          'Failed to load purchase request data for G Cross Number mapping.',
           'error'
         );
-        console.error('Error loading purchase orders:', error);
       }
     });
   }
@@ -406,7 +446,7 @@ export class Purchaseorder implements OnInit {
       doc.setFont('helvetica', 'normal');
 
       const referenceDetails = [
-        ['Event ID:', po.eventid?.toString() || 'N/A'],
+        ['G Cross Number:', po.gCrossNumber?.toString() || 'N/A'],
         ['Vendor ID:', po.vendorid?.toString() || 'N/A'],
         ['Negotiation ID:', po.negotiationid?.toString() || 'N/A'],
         ['Purchase Request ID (PRID):', po.prid?.toString() || 'N/A']
@@ -487,7 +527,7 @@ Financial Overview:
 - Total Amount (USD): ${formattedAmountUSD}
 
 Associated References:
-- Event ID: ${po.eventid || 'N/A'}
+- G Cross Number: ${po.gCrossNumber || 'N/A'}
 - Vendor ID: ${po.vendorid || 'N/A'}
 - Negotiation ID: ${po.negotiationid || 'N/A'}
 - Purchase Request ID (PRID): ${po.prid || 'N/A'}
@@ -599,9 +639,22 @@ The Ford Motor Company Purchase Team`;
     return vendor ? `${vendorId} - ${vendor.vendorname}` : `${vendorId}`;
   }
 
-  getEventName(eventId: number): string {
-    const event = this.allEvents.find(e => e.eventId === eventId);
-    return event ? `${eventId} - ${event.eventname}` : `${eventId}`;
+  getEventName(gCrossNumber: number): string {
+    if (!gCrossNumber) {
+      return 'N/A';
+    }
+    
+    const event = this.allEvents.find(e => {
+      const eventGCrossNumber = e.gcrossNumber || e.gCrossNumber || e.GCROSS_NUMBER || e.gcross_number;
+      return eventGCrossNumber === gCrossNumber;
+    });
+    
+    if (event) {
+      const eventName = event.eventname || event.EVENTNAME;
+      return eventName ? `${gCrossNumber} - ${eventName}` : `${gCrossNumber}`;
+    }
+    
+    return `${gCrossNumber}`;
   }
 
   // Navigation methods for sidebar

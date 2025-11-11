@@ -45,7 +45,15 @@ export class NegotiationViewComponent implements OnInit {
 
     this.requestService.getAllEvents().subscribe({
       next: (events) => {
-        this.allEvents = events;
+        // Normalize event field names to ensure consistent structure
+        this.allEvents = events.map(event => ({
+          gCrossNumber: event.gcrossNumber || event.gCrossNumber || event.GCROSS_NUMBER || event.gcross_number || 0,
+          eventname: event.eventname || event.EVENTNAME || '',
+          GCROSS_NUMBER: event.GCROSS_NUMBER,
+          gcross_number: event.gcross_number,
+          gcrossNumber: event.gcrossNumber,
+          EVENTNAME: event.EVENTNAME
+        }));
       },
       error: (error) => console.error('Error loading events:', error)
     });
@@ -57,11 +65,11 @@ export class NegotiationViewComponent implements OnInit {
 
     this.purchaseService.getNegotiationDetails(this.negotiationId).subscribe({
       next: (data) => {
-        this.negotiation = data;
-        
-        // Debug: Log all available fields to help identify the correct comments field
-        console.log('Negotiation data received:', data);
-        console.log('Available fields:', Object.keys(data));
+        // Normalize field names - backend sends gcrossNumber (lowercase) instead of gCrossNumber
+        this.negotiation = {
+          ...data,
+          gCrossNumber: (data as any).gCrossNumber || (data as any).gcrossNumber || (data as any).GCROSS_NUMBER || 0
+        };
         
         // Map comments field from different possible backend field names
         this.negotiation.comments = (data as any).negotiation_comments || 
@@ -69,8 +77,6 @@ export class NegotiationViewComponent implements OnInit {
                                   (data as any).NEGOTIATION_COMMENTS ||
                                   (data as any).comments || 
                                   '';
-        
-        console.log('Mapped comments:', this.negotiation.comments);
         
         // Load approval/rejection dates from localStorage since backend doesn't support them
         this.loadApprovalDataFromLocalStorage();
@@ -156,10 +162,20 @@ export class NegotiationViewComponent implements OnInit {
   }
 
   // Helper methods for display
-  getEventName(eventId: number | undefined): string {
-    if (eventId === undefined) return 'N/A';
-    const event = this.allEvents.find(e => e.eventId === eventId);
-    return event ? event.eventname : `Event ${eventId}`;
+  getEventName(gCrossNumber: number | undefined): string {
+    if (gCrossNumber === undefined || gCrossNumber === 0) return 'N/A';
+    
+    const event = this.allEvents.find(e => {
+      const eventGCrossNumber = e.gcrossNumber || e.gCrossNumber || e.GCROSS_NUMBER || e.gcross_number;
+      return eventGCrossNumber === gCrossNumber;
+    });
+    
+    if (event) {
+      const eventName = event.eventname || event.EVENTNAME;
+      return eventName ? `${gCrossNumber} - ${eventName}` : `${gCrossNumber}`;
+    }
+    
+    return `${gCrossNumber}`;
   }
 
   getVendorName(vendorId: number | undefined): string {
@@ -174,14 +190,6 @@ export class NegotiationViewComponent implements OnInit {
     // TODO: When backend is updated with vendor email fields, this will return actual email
     // Currently returns 'N/A' as placeholder
     return vendor?.email || vendor?.vendoremail || 'N/A';
-  }
-
-  getVendorPhone(vendorId: number | undefined): string {
-    if (vendorId === undefined) return 'N/A';
-    const vendor = this.allVendors.find(v => v.vendorId === vendorId);
-    // TODO: When backend is updated with vendor phone fields, this will return actual phone
-    // Currently returns 'N/A' as placeholder
-    return vendor?.phone || vendor?.vendorphone || 'N/A';
   }
 
   getPRStatus(): string {

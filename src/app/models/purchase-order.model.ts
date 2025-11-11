@@ -1,6 +1,6 @@
 export interface PurchaseOrder {
   po_id: number;
-  eventid: number;
+  gCrossNumber: number;    // Maps to GCROSS_NUMBER from backend
   vendorid: number;
   negotiationid: number;
   prid: number;

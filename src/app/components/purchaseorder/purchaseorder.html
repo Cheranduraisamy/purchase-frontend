@@ -125,7 +125,7 @@
           <thead>
             <tr>
               <th class="sortable">PO ID <i class="fas fa-sort"></i></th>
-              <th class="sortable">Event ID <i class="fas fa-sort"></i></th>
+              <th class="sortable">G Cross Number <i class="fas fa-sort"></i></th>
               <th class="sortable">Vendor ID <i class="fas fa-sort"></i></th>
               <th class="sortable">Negotiation ID <i class="fas fa-sort"></i></th>
               <th class="sortable">PR ID <i class="fas fa-sort"></i></th>
@@ -145,7 +145,7 @@
           <tbody>
                      <tr *ngFor="let po of paginatedPurchaseOrders" (click)="onRowClick(po)" class="clickable-row">
                          <td><strong>#{{ po.po_id }}</strong></td>
-                         <td>{{ getEventName(po.eventid) }}</td>
+                         <td>{{ getEventName(po.gCrossNumber) }}</td>
                          <td>{{ getVendorName(po.vendorid) }}</td>
                          <td>{{ po.negotiationid }}</td>
                          <td>{{ po.prid }}</td>
@@ -250,8 +250,8 @@
                         </span>
                     </div>
                     <div class="detail-row-view">
-                        <span class="label-view">Event:</span>
-                        <span class="value-view">{{ getEventName(selectedPOForDetails.eventid) }}</span>
+                        <span class="label-view">G Cross Number:</span>
+                        <span class="value-view">{{ getEventName(selectedPOForDetails.gCrossNumber) }}</span>
                     </div>
                     <div class="detail-row-view">
                         <span class="label-view">Vendor:</span>

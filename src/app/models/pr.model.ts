@@ -2,8 +2,7 @@
 export interface PurchaseRequest {
   prid: number;
   prId?: number; // Alternative property name for compatibility
-  eventid: number;
-  eventId?: number; // Alternative property name for compatibility
+  gCrossNumber: number;    // Maps to GCROSS_NUMBER from backend
   vendorid: number;
   vendorId?: number; // Alternative property name for compatibility
   requestDate: string;

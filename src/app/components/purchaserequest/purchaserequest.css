@@ -507,20 +507,29 @@ div.modal-overlay[ng-reflect-ng-if="true"] .view-container,
 }
 
 .purchase-form input,
-.purchase-form select {
+.purchase-form select,
+.form-select {
     width: 100%;
     padding: 12px 15px;
     border: 2px solid #e0e0e0;
     border-radius: 6px;
     font-size: 1em;
     transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    background-color: #fff;
 }
 
 .purchase-form input:focus,
-.purchase-form select:focus {
+.purchase-form select:focus,
+.form-select:focus {
     outline: none;
     border-color: #3f51b5;
     box-shadow: 0 0 0 3px rgba(63, 81, 181, 0.1);
+}
+
+.form-select option {
+    padding: 10px;
+    background-color: #fff;
+    color: #333;
 }
 
 /* Status Badge Styles */
